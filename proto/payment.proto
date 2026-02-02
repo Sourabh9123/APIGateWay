@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package payment.v1;
+
+service PaymentService {
+  rpc ProcessPayment (ProcessPaymentRequest) returns (PaymentResult);
+  rpc GetTransaction (GetTransactionRequest) returns (Transaction);
+}
+
+message ProcessPaymentRequest {
+  string user_id = 1;
+  double amount = 2;
+  string currency = 3;
+}
+
+message PaymentResult {
+  bool success = 1;
+  string transaction_id = 2;
+}
+
+message GetTransactionRequest {
+  string transaction_id = 1;
+}
+
+message Transaction {
+  string id = 1;
+  string user_id = 2;
+  double amount = 3;
+  string status = 4;
+}
