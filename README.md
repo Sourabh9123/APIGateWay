@@ -17,12 +17,12 @@ A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Red
 
 ```mermaid
 graph LR
-    User[Client] --> Nginx[Nginx Load Balancer]
-    Nginx --> Bun[Bun API Gateway]
+    User[Client] --> Nginx["Nginx Load Balancer"]
+    Nginx --> Bun["Bun API Gateway"]
     Bun --> Redis[Redis]
-    Bun --> Auth[JWT Middleware]
-    Bun --> ServiceA[User Service (gRPC)]
-    Bun --> ServiceB[Payment Service (gRPC)]
+    Bun --> Auth["JWT Middleware"]
+    Bun --> ServiceA["User Service (gRPC)"]
+    Bun --> ServiceB["Payment Service (gRPC)"]
 ```
 
 ## Prerequisites
