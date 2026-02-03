@@ -1,6 +1,7 @@
+import { config } from "./config.js";
 import { router } from "./routes/router.js";
 
-const port = process.env.PORT || 3000;
+const port = config.app.port;
 
 console.log(`Starting API Gateway on port ${port}...`);
 

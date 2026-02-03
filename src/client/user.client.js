@@ -1,9 +1,11 @@
 import { BaseClient } from "./base.client.js";
 import { UserService } from "../stubs/user_connect.js";
 
+import { config } from "../config.js";
+
 export class UserClient extends BaseClient {
     constructor() {
-        super(process.env.SERVICE_ADDR_USER || "http://localhost:3001", UserService);
+        super(config.services.user, UserService);
     }
 
     async getUser(id) {

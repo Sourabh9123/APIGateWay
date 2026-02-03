@@ -1,7 +1,9 @@
 import Redis from "ioredis";
 
-const redisHost = process.env.REDIS_HOST || "localhost";
-const redisPort = process.env.REDIS_PORT || 6379;
+import { config } from "../config.js";
+
+const redisHost = config.redis.host;
+const redisPort = config.redis.port;
 
 console.log(`Connecting to Redis at ${redisHost}:${redisPort}`);
 

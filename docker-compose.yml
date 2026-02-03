@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bun
-    container_name: api-gateway
+    deploy:
+      replicas: 1 # Number of replicas for the gateway service
     env_file:
       - .env
     networks:
@@ -23,10 +24,11 @@ services:
       - app-network
 
   redis:
-    image: redis:alpine
+    image: redis/redis-stack:latest
     container_name: gateway-redis
     ports:
       - "${REDIS_PORT}:6379"
+      - "${REDIS_INSIGHTS_PORT}:8001"
     networks:
       - app-network
 

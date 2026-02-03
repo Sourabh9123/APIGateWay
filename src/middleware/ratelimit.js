@@ -1,9 +1,11 @@
 import { redis } from "../core/redis.js";
 import { verifyToken } from "./auth.js";
 
-const WINDOW_SIZE_IN_SECONDS = parseInt(process.env.RATE_LIMIT_WINDOW || "60", 10);
-const MAX_GUEST_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX || "100", 10);
-const MAX_AUTH_REQUESTS = parseInt(process.env.RATE_LIMIT_AUTH_MAX || "500", 10);
+import { config } from "../config.js";
+
+const WINDOW_SIZE_IN_SECONDS = config.rateLimit.windowSize;
+const MAX_GUEST_REQUESTS = config.rateLimit.maxRequests;
+const MAX_AUTH_REQUESTS = config.rateLimit.maxAuthRequests;
 
 export async function rateLimit(req) {
     try {
