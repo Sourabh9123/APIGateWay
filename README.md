@@ -6,10 +6,12 @@ A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Red
 
 - **High Performance**: Built on [Bun](https://bun.sh), a fast all-in-one JavaScript runtime.
 - **Load Balancing**: Nginx configured as a reverse proxy and load balancer.
-- **Rate Limiting**: Redis-backed sliding window rate limiter.
+- **Redis Stack**: Enhanced with Redis-backed sliding window rate limiter and **Redis Insight**.
     - **Authenticated**: Higher limits for logged-in users (ID-based).
     - **Anonymous**: Stricter limits for guests (IP-based).
+    - **Visualization**: Built-in **Redis Insight** for monitoring.
 - **gRPC Clients**: Uses `@connectrpc/connect` to talk to downstream services (stubs provided).
+- **Centralized Config**: Simplified environment management via `src/config.js`.
 - **JWT Authentication**: Secure Bearer token verification.
 - **Modular Architecture**: Domain-driven route separation (`user`, `payment`).
 
@@ -38,6 +40,7 @@ graph LR
     PORT=3000
     REDIS_HOST=redis
     REDIS_PORT=6379
+    REDIS_INSIGHTS_PORT=8001
     SERVICE_ADDR_USER=http://user-service:3001
     SERVICE_ADDR_PAYMENT=http://payment-service:3002
     JWT_SECRET=supersecretkey
@@ -45,10 +48,14 @@ graph LR
     RATE_LIMIT_MAX=100
     RATE_LIMIT_AUTH_MAX=500
     ```
-3.  **Run with Docker Compose**
+4.  **Run with Docker Compose**
     ```bash
     docker compose up --build
     ```
+
+## Dashboard & Monitoring
+
+- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001) (when running via Docker).
 
 ## API Endpoints
 
@@ -80,6 +87,7 @@ The gateway listens on port `80` (via Nginx) or `3000` (direct Bun).
 │   ├── /client                 # gRPC Client Wrappers
 │   ├── /routes                 # Domain Routes
 │   ├── /middleware             # Auth & Rate Limiting
+│   ├── config.js               # Centralized Configuration
 │   └── index.js                # Entry Point
 ├── Dockerfile.bun              # Gateway Dockerfile
 └── docker-compose.yml          # Orchestration
