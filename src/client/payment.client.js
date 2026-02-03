@@ -1,9 +1,11 @@
 import { BaseClient } from "./base.client.js";
 import { PaymentService } from "../stubs/payment_connect.js";
 
+import { config } from "../config.js";
+
 export class PaymentClient extends BaseClient {
     constructor() {
-        super(process.env.SERVICE_ADDR_PAYMENT || "http://localhost:3002", PaymentService);
+        super(config.services.payment, PaymentService);
     }
 
     async processPayment(data) {
