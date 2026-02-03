@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   gateway:
     build:
       context: .
       dockerfile: Dockerfile.bun
     deploy:
-      replicas: 1 # Number of replicas for the gateway service
+      replicas: 2 # Number of replicas for the gateway service
     env_file:
       - .env
     networks:
