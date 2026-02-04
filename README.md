@@ -10,6 +10,7 @@ A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Red
     - **Authenticated**: Higher limits for logged-in users (ID-based).
     - **Anonymous**: Stricter limits for guests (IP-based).
     - **Visualization**: Built-in **Redis Insight** for monitoring.
+- **Centralized Logging**: Daily rotating JSON logs via **Winston** collected by **Fluent Bit**.
 - **gRPC Clients**: Uses `@connectrpc/connect` to talk to downstream services (stubs provided).
 - **Centralized Config**: Simplified environment management via `src/config.js`.
 - **JWT Authentication**: Secure Bearer token verification.
@@ -23,6 +24,9 @@ graph LR
     Nginx --> Bun["Bun API Gateway"]
     Bun --> Redis[Redis]
     Bun --> Auth["JWT Middleware"]
+    Bun --> LogFile["Daily Log Files"]
+    LogFile --> FluentBit["Fluent Bit"]
+    FluentBit --> Output["Stdout / Kafka (Future)"]
     Bun --> ServiceA["User Service (gRPC)"]
     Bun --> ServiceB["Payment Service (gRPC)"]
 ```
@@ -31,31 +35,39 @@ graph LR
 
 - [Docker](https://www.docker.com/) & Docker Compose
 
-## Getting Started
+### 1. Project Setup
+Initialize environment variables from templates:
+```bash
+make setup
+```
 
-1.  **Clone the repository**
-2.  **Configure Environment**
-    Copy the example or create a `.env` file in the `api-gateway` directory:
-    ```env
-    PORT=3000
-    REDIS_HOST=redis
-    REDIS_PORT=6379
-    REDIS_INSIGHTS_PORT=8001
-    SERVICE_ADDR_USER=http://user-service:3001
-    SERVICE_ADDR_PAYMENT=http://payment-service:3002
-    JWT_SECRET=supersecretkey
-    RATE_LIMIT_WINDOW=60
-    RATE_LIMIT_MAX=100
-    RATE_LIMIT_AUTH_MAX=500
-    ```
-4.  **Run with Docker Compose**
-    ```bash
-    docker compose up --build
-    ```
+### 2. Run with Docker (Recommended)
+Build and start the entire stack (Nginx, Gateway, Redis, Fluent Bit):
+```bash
+make docker-up
+```
+
+### 3. Run Locally (Development)
+For faster iteration, run the Gateway locally using Bun. 
+
+First, start only the Redis service:
+```bash
+make redis
+```
+
+Then start the Gateway:
+```bash
+make dev
+```
 
 ## Dashboard & Monitoring
 
-- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001) (when running via Docker).
+- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001).
+- **Fluent Bit Logs**: View centralized logs via:
+  ```bash
+  make docker-logs
+  ```
+- **Local Logs**: Daily rotating log files are in the `./logs` directory (ignored by git).
 
 ## API Endpoints
 
@@ -79,10 +91,13 @@ The gateway listens on port `80` (via Nginx) or `3000` (direct Bun).
 
 ```
 /api-gateway
-├── /infra                      # Infrastructure (Nginx)
+├── /infra                      # Infrastructure (Nginx, Fluent Bit)
+│   ├── /nginx
+│   └── /fluent-bit
 ├── /proto                      # gRPC Protocol Buffers
 ├── /src
 │   ├── /core                   # Core modules (Redis)
+│   ├── /logger                 # Daily Rotating Logger
 │   ├── /stubs                  # Generated gRPC stubs
 │   ├── /client                 # gRPC Client Wrappers
 │   ├── /routes                 # Domain Routes
