@@ -18,5 +18,8 @@ export const config = {
     services: {
         user: process.env.SERVICE_ADDR_USER || "http://localhost:3001",
         payment: process.env.SERVICE_ADDR_PAYMENT || "http://localhost:3002",
+    },
+    logging: {
+        logDir: process.env.LOG_DIR || "logs",
     }
 };

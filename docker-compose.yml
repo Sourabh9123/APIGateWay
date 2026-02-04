@@ -3,12 +3,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bun
+    volumes:
+      - app-logs:/app/logs
     deploy:
-      replicas: 2 # Number of replicas for the gateway service
+      replicas: 1 # Number of replicas for the gateway service
     env_file:
       - .env
     networks:
       - app-network
+    depends_on:
+      - redis
 
   nginx:
     build:
@@ -30,6 +34,20 @@ services:
     networks:
       - app-network
 
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    container_name: gateway-fluent-bit
+    volumes:
+      - ./infra/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - app-logs:/var/log/app
+    depends_on:
+      - gateway
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  app-logs:

@@ -1,11 +1,11 @@
 import Redis from "ioredis";
-
 import { config } from "../config.js";
+import { logger } from "../logger/logger.js";
 
 const redisHost = config.redis.host;
 const redisPort = config.redis.port;
 
-console.log(`Connecting to Redis at ${redisHost}:${redisPort}`);
+logger.info(`Connecting to Redis at ${redisHost}:${redisPort}`);
 
 export const redis = new Redis({
     host: redisHost,
