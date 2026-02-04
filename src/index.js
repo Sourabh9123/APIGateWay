@@ -1,9 +1,10 @@
 import { config } from "./config.js";
 import { router } from "./routes/router.js";
+import { logger } from "./logger/logger.js";
 
 const port = config.app.port;
 
-console.log(`Starting API Gateway on port ${port}...`);
+logger.info(`Starting API Gateway on port ${port}...`);
 
 Bun.serve({
     port: port,
