@@ -35,33 +35,39 @@ graph LR
 
 - [Docker](https://www.docker.com/) & Docker Compose
 
-## Getting Started
+### 1. Project Setup
+Initialize environment variables from templates:
+```bash
+make setup
+```
 
-1.  **Clone the repository**
-2.  **Configure Environment**
-    Copy the example or create a `.env` file in the `api-gateway` directory:
-    ```env
-    PORT=3000
-    REDIS_HOST=redis
-    REDIS_PORT=6379
-    REDIS_INSIGHTS_PORT=8001
-    SERVICE_ADDR_USER=http://user-service:3001
-    SERVICE_ADDR_PAYMENT=http://payment-service:3002
-    JWT_SECRET=supersecretkey
-    RATE_LIMIT_WINDOW=60
-    RATE_LIMIT_MAX=100
-    RATE_LIMIT_AUTH_MAX=500
-    ```
-4.  **Run with Docker Compose**
-    ```bash
-    docker compose up --build
-    ```
+### 2. Run with Docker (Recommended)
+Build and start the entire stack (Nginx, Gateway, Redis, Fluent Bit):
+```bash
+make docker-up
+```
+
+### 3. Run Locally (Development)
+For faster iteration, run the Gateway locally using Bun. 
+
+First, start only the Redis service:
+```bash
+make redis
+```
+
+Then start the Gateway:
+```bash
+make dev
+```
 
 ## Dashboard & Monitoring
 
 - **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001).
-- **Fluent Bit Logs**: Centralized logs can be viewed via `docker logs gateway-fluent-bit`.
-- **Local Logs**: Daily rotating log files are stored in the `./logs` directory.
+- **Fluent Bit Logs**: View centralized logs via:
+  ```bash
+  make docker-logs
+  ```
+- **Local Logs**: Daily rotating log files are in the `./logs` directory (ignored by git).
 
 ## API Endpoints
 

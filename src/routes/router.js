@@ -1,10 +1,15 @@
 import { authenticate } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/ratelimit.js";
 import { v1Router } from "./v1/index.js";
+import { logger } from "../logger/logger.js";
 
 export async function router(req) {
     const url = new URL(req.url);
     const path = url.pathname;
+    const method = req.method;
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+    logger.info(`Incoming request: ${method} ${path}`, { ip });
 
     // 1. Rate Limiting
     const rateLimitResponse = await rateLimit(req);
@@ -27,5 +32,6 @@ export async function router(req) {
         }
     }
 
+    logger.warn(`Route not found: ${method} ${path}`, { ip });
     return new Response("Not Found", { status: 404 });
 }
