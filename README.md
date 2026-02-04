@@ -10,6 +10,7 @@ A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Red
     - **Authenticated**: Higher limits for logged-in users (ID-based).
     - **Anonymous**: Stricter limits for guests (IP-based).
     - **Visualization**: Built-in **Redis Insight** for monitoring.
+- **Centralized Logging**: Daily rotating JSON logs via **Winston** collected by **Fluent Bit**.
 - **gRPC Clients**: Uses `@connectrpc/connect` to talk to downstream services (stubs provided).
 - **Centralized Config**: Simplified environment management via `src/config.js`.
 - **JWT Authentication**: Secure Bearer token verification.
@@ -23,6 +24,9 @@ graph LR
     Nginx --> Bun["Bun API Gateway"]
     Bun --> Redis[Redis]
     Bun --> Auth["JWT Middleware"]
+    Bun --> LogFile["Daily Log Files"]
+    LogFile --> FluentBit["Fluent Bit"]
+    FluentBit --> Output["Stdout / Kafka (Future)"]
     Bun --> ServiceA["User Service (gRPC)"]
     Bun --> ServiceB["Payment Service (gRPC)"]
 ```
@@ -55,7 +59,9 @@ graph LR
 
 ## Dashboard & Monitoring
 
-- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001) (when running via Docker).
+- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001).
+- **Fluent Bit Logs**: Centralized logs can be viewed via `docker logs gateway-fluent-bit`.
+- **Local Logs**: Daily rotating log files are stored in the `./logs` directory.
 
 ## API Endpoints
 
@@ -79,10 +85,13 @@ The gateway listens on port `80` (via Nginx) or `3000` (direct Bun).
 
 ```
 /api-gateway
-├── /infra                      # Infrastructure (Nginx)
+├── /infra                      # Infrastructure (Nginx, Fluent Bit)
+│   ├── /nginx
+│   └── /fluent-bit
 ├── /proto                      # gRPC Protocol Buffers
 ├── /src
 │   ├── /core                   # Core modules (Redis)
+│   ├── /logger                 # Daily Rotating Logger
 │   ├── /stubs                  # Generated gRPC stubs
 │   ├── /client                 # gRPC Client Wrappers
 │   ├── /routes                 # Domain Routes
