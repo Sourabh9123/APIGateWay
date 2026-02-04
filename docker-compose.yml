@@ -35,10 +35,10 @@ services:
       - app-network
 
   fluent-bit:
-    image: fluent/fluent-bit:latest
+    build:
+      context: ./infra/fluent-bit
     container_name: gateway-fluent-bit
     volumes:
-      - ./infra/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
       - app-logs:/var/log/app
     depends_on:
       - gateway
