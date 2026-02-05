@@ -1,7 +1,6 @@
 import { authenticate } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/ratelimit.js";
 import { v1Router } from "./v1/index.js";
-import { logger } from "../logger/logger.js";
 
 export async function router(req) {
     const url = new URL(req.url);

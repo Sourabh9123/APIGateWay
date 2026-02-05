@@ -4,7 +4,7 @@ import path from "path";
 import { config } from "../config.js";
 import { correlationContext } from "../middleware/correlation-context.js";
 
-const { combine, timestamp, json, metadata, printf } = winston.format;
+const { combine, timestamp, json, metadata } = winston.format;
 
 // Custom format to inject correlation ID from AsyncLocalStorage with monotonic sequence
 const correlationFormat = winston.format((info) => {

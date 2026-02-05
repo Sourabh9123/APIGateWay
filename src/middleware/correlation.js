@@ -1,15 +1,25 @@
-import { AsyncLocalStorage } from "node:async_hooks";
 import { logger } from "../logger/logger.js";
 import { correlationContext } from "./correlation-context.js";
 
 export async function correlationIdMiddleware(req, next) {
-    // Custom Correlation ID: TIMESTAMP (base36) + PID (base36) + RANDOM
+    // Custom Correlation ID: TIMESTAMP + PID + UUID + SHUFFLE
     const generateId = () => {
         const timestamp = Date.now().toString(36).toUpperCase();
         const pid = process.pid.toString(36).toUpperCase();
-        const random = Math.random().toString(36).substring(2, 10).toUpperCase();
-        return `${timestamp}${pid}${random}`;
+        const uuidPart = crypto.randomUUID().replace(/-/g, "").substring(0, 12).toUpperCase();
+
+        // Combine all parts
+        let combined = (timestamp + pid + uuidPart).split("");
+
+        // Fisher-Yates shuffle for maximum entropy
+        for (let i = combined.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [combined[i], combined[j]] = [combined[j], combined[i]];
+        }
+
+        return combined.join("");
     };
+
 
     const correlationId = req.headers.get("x-correlation-id") || generateId();
     const startTime = Date.now();
