@@ -2,8 +2,18 @@ import winston from "winston";
 import "winston-daily-rotate-file";
 import path from "path";
 import { config } from "../config.js";
+import { correlationContext } from "../middleware/correlation-context.js";
 
-const { combine, timestamp, json, metadata } = winston.format;
+const { combine, timestamp, json, metadata, printf } = winston.format;
+
+// Custom format to inject correlation ID from AsyncLocalStorage
+const correlationFormat = winston.format((info) => {
+    const correlationId = correlationContext?.getStore();
+    if (correlationId) {
+        info.correlationId = correlationId;
+    }
+    return info;
+});
 
 // Ensure logs directory exists (Bun will handle this or we rely on Docker volumes)
 const logDir = config.logging.logDir;
@@ -15,8 +25,9 @@ const fileTransport = new winston.transports.DailyRotateFile({
     maxSize: "20m",
     maxFiles: "14d",
     format: combine(
+        correlationFormat(),
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        metadata({ fillExcept: ["message", "level", "timestamp", "label"] }),
+        metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
     ),
 });
@@ -24,14 +35,22 @@ const fileTransport = new winston.transports.DailyRotateFile({
 export const logger = winston.createLogger({
     level: "info",
     format: combine(
+        correlationFormat(),
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        metadata({ fillExcept: ["message", "level", "timestamp", "label"] }),
+        metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
     ),
     transports: [
         fileTransport,
         new winston.transports.Console({
-            format: winston.format.simple(),
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.printf(({ timestamp, level, message, correlationId, ...meta }) => {
+                    const cid = correlationId ? ` [${correlationId}]` : "";
+                    return `${timestamp} ${level}:${cid} ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`;
+                })
+            ),
         }),
     ],
 });
+
