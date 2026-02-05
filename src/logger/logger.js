@@ -6,14 +6,18 @@ import { correlationContext } from "../middleware/correlation-context.js";
 
 const { combine, timestamp, json, metadata, printf } = winston.format;
 
-// Custom format to inject correlation ID from AsyncLocalStorage
+// Custom format to inject correlation ID from AsyncLocalStorage with monotonic sequence
 const correlationFormat = winston.format((info) => {
-    const correlationId = correlationContext?.getStore();
-    if (correlationId) {
-        info.correlationId = correlationId;
+    const context = correlationContext?.getStore();
+    if (context && typeof context === "object") {
+        // Increment sequence for each log within the same request context
+        info.correlationId = `${context.id}-${context.seq++}`;
+    } else if (context) {
+        info.correlationId = context;
     }
     return info;
 });
+
 
 // Ensure logs directory exists (Bun will handle this or we rely on Docker volumes)
 const logDir = config.logging.logDir;
@@ -25,7 +29,6 @@ const fileTransport = new winston.transports.DailyRotateFile({
     maxSize: "20m",
     maxFiles: "14d",
     format: combine(
-        correlationFormat(),
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
         metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
@@ -35,7 +38,7 @@ const fileTransport = new winston.transports.DailyRotateFile({
 export const logger = winston.createLogger({
     level: "info",
     format: combine(
-        correlationFormat(),
+        correlationFormat(), // Combined format runs first
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
         metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
@@ -53,4 +56,5 @@ export const logger = winston.createLogger({
         }),
     ],
 });
+
 

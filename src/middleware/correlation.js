@@ -20,7 +20,7 @@ export async function correlationIdMiddleware(req, next) {
     const realIp = req.headers.get("x-real-ip");
     const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : "unknown";
 
-    return correlationContext.run(correlationId, async () => {
+    return correlationContext.run({ id: correlationId, seq: 1 }, async () => {
 
         let response;
         let error = null;
@@ -46,7 +46,6 @@ export async function correlationIdMiddleware(req, next) {
             }
 
             const logData = {
-                correlationId,
                 method: req.method,
                 path: url.pathname,
                 service,
@@ -58,6 +57,7 @@ export async function correlationIdMiddleware(req, next) {
                 startTime: new Date(startTime).toISOString(),
                 endTime: new Date(endTime).toISOString(),
             };
+
 
 
             const logMsg = `${req.method} ${url.pathname} [${service}] - ${status} (${duration}ms)`;
