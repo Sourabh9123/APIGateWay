@@ -1,20 +1,22 @@
 # High-Performance API Gateway
 
-A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Redis**. It handles versioned routing, JWT authentication, and dual-level rate limiting, proxying requests to downstream microservices via **gRPC**.
+A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Redis**. It handles versioned routing, JWT authentication, distributed correlation tracking, and dual-level rate limiting, proxying requests to downstream microservices via **gRPC**.
 
 ## Features
 
 - **High Performance**: Built on [Bun](https://bun.sh), a fast all-in-one JavaScript runtime.
+- **Distributed Correlation Tracking**: 
+    - **Unique IDs**: Ultra-random, shuffled alphanumeric IDs (Timestamp + PID + UUID + Shuffle) assigned to every request.
+    - **Monotonic Sequencing**: Every log in a request lifecycle is tagged with a sequential suffix (e.g., `-1`, `-2`, `-3`) for perfect event ordering.
+    - **Context Propagation**: Uses `AsyncLocalStorage` to propagate tracking IDs across all middleware and logs without manual passing.
 - **Load Balancing**: Nginx configured as a reverse proxy and load balancer.
 - **Redis Stack**: Enhanced with Redis-backed sliding window rate limiter and **Redis Insight**.
     - **Authenticated**: Higher limits for logged-in users (ID-based).
     - **Anonymous**: Stricter limits for guests (IP-based).
-    - **Visualization**: Built-in **Redis Insight** for monitoring.
 - **Centralized Logging**: Daily rotating JSON logs via **Winston** collected by **Fluent Bit**.
-- **gRPC Clients**: Uses `@connectrpc/connect` to talk to downstream services (stubs provided).
-- **Centralized Config**: Simplified environment management via `src/config.js`.
-- **JWT Authentication**: Secure Bearer token verification.
-- **Modular Architecture**: Domain-driven route separation (`user`, `payment`).
+- **Performance Monitoring**: Automatic tracking of request duration (`durationMs`), start/end times, and target services.
+- **gRPC Clients**: Uses `@connectrpc/connect` to talk to downstream services.
+- **JWT Authentication**: Secure Bearer token verification with support for **Public Routes**.
 
 ## Architecture
 
@@ -22,52 +24,39 @@ A modular, production-ready API Gateway built with **Bun**, **Nginx**, and **Red
 graph LR
     User[Client] --> Nginx["Nginx Load Balancer"]
     Nginx --> Bun["Bun API Gateway"]
+    subgraph Tracking
+        Bun --> Correlation["Correlation Middleware"]
+        Correlation --> Context["AsyncLocalStorage"]
+    end
     Bun --> Redis[Redis]
     Bun --> Auth["JWT Middleware"]
     Bun --> LogFile["Daily Log Files"]
     LogFile --> FluentBit["Fluent Bit"]
-    FluentBit --> Output["Stdout / Kafka (Future)"]
+    FluentBit --> Output["Centralized Logs / Console"]
     Bun --> ServiceA["User Service (gRPC)"]
     Bun --> ServiceB["Payment Service (gRPC)"]
 ```
 
-## Prerequisites
+## Observability & Logging
 
-- [Docker](https://www.docker.com/) & Docker Compose
+Every request is assigned a `x-correlation-id` and its performance is tracked. You can see this in both response headers and logs.
 
-### 1. Project Setup
-Initialize environment variables from templates:
-```bash
-make setup
+### Log Format (JSON)
+```json
+{
+  "correlationId": "MNY1X7A2B9C3D4E5F-3",
+  "level": "info",
+  "message": "Request Completed: GET /api/v1/user/123 [user] - 200 (15ms)",
+  "metadata": {
+    "service": "user",
+    "ip": "1.2.3.4",
+    "status": 200,
+    "durationMs": 15,
+    "startTime": "2026-02-06T00:00:00.000Z"
+  },
+  "timestamp": "2026-02-06 02:00:00"
+}
 ```
-
-### 2. Run with Docker (Recommended)
-Build and start the entire stack (Nginx, Gateway, Redis, Fluent Bit):
-```bash
-make docker-up
-```
-
-### 3. Run Locally (Development)
-For faster iteration, run the Gateway locally using Bun. 
-
-First, start only the Redis service:
-```bash
-make redis
-```
-
-Then start the Gateway:
-```bash
-make dev
-```
-
-## Dashboard & Monitoring
-
-- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001).
-- **Fluent Bit Logs**: View centralized logs via:
-  ```bash
-  make docker-logs
-  ```
-- **Local Logs**: Daily rotating log files are in the `./logs` directory (ignored by git).
 
 ## API Endpoints
 
@@ -78,7 +67,7 @@ The gateway listens on port `80` (via Nginx) or `3000` (direct Bun).
 | Method | Endpoint      | Description        | Auth Required |
 | :----- | :------------ | :----------------- | :------------ |
 | GET    | `/api/v1/user/:id` | Get user details   | Yes           |
-| POST   | `/api/v1/user`     | Create a new user  | Yes           |
+| POST   | `/api/v1/user`     | **Registration**   | **No (Public)** |
 
 ### Payment Service (`/api/v1/payment`)
 
@@ -87,23 +76,28 @@ The gateway listens on port `80` (via Nginx) or `3000` (direct Bun).
 | GET    | `/api/v1/payment/:id` | Get transaction details| Yes           |
 | POST   | `/api/v1/payment`     | Process a payment      | Yes           |
 
+## Dashboard & Monitoring
+
+- **Redis Insight**: Accessible at [http://localhost:8001](http://localhost:8001).
+- **Fluent Bit Logs**: View centralized, parsed logs via:
+  ```bash
+  make docker-logs
+  ```
+
 ## Directory Structure
 
 ```
 /api-gateway
 ├── /infra                      # Infrastructure (Nginx, Fluent Bit)
 │   ├── /nginx
-│   └── /fluent-bit
-├── /proto                      # gRPC Protocol Buffers
+│   └── /fluent-bit             # JSON Parsers & Config
 ├── /src
 │   ├── /core                   # Core modules (Redis)
-│   ├── /logger                 # Daily Rotating Logger
-│   ├── /stubs                  # Generated gRPC stubs
+│   ├── /logger                 # Monotonic Rotating Logger
 │   ├── /client                 # gRPC Client Wrappers
 │   ├── /routes                 # Domain Routes
-│   ├── /middleware             # Auth & Rate Limiting
+│   ├── /middleware             # Auth, Rate Limit, Correlation
 │   ├── config.js               # Centralized Configuration
-│   └── index.js                # Entry Point
-├── Dockerfile.bun              # Gateway Dockerfile
-└── docker-compose.yml          # Orchestration
+│   └── index.js                # Entry Point (Middleware setup)
 ```
+
