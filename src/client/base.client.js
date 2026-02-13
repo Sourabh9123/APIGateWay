@@ -3,11 +3,15 @@ import { createPromiseClient } from "@connectrpc/connect";
 
 export class BaseClient {
     constructor(baseUrl, serviceDefinition) {
-        // For Node/Bun backends, we use createGrpcTransport (HTTP/2)
-        // If communicating with web-compatible gRPC-web, modify transport here.
         const transport = createGrpcTransport({
             baseUrl: baseUrl,
-            httpVersion: "2", // Force HTTP/2 for gRPC
+            httpVersion: "2",
+            interceptors: [
+                (next) => async (req) => {
+                    // Correlation ID now needs to be passed explicitly or handled via child clients
+                    return next(req);
+                },
+            ],
         });
 
         this.client = createPromiseClient(serviceDefinition, transport);

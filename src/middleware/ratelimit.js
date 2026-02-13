@@ -8,6 +8,7 @@ const MAX_GUEST_REQUESTS = config.rateLimit.maxRequests;
 const MAX_AUTH_REQUESTS = config.rateLimit.maxAuthRequests;
 
 export async function rateLimit(req) {
+    const reqLogger = req.logger || logger;
     try {
         const user = verifyToken(req);
         let key, limit;
@@ -28,7 +29,7 @@ export async function rateLimit(req) {
         }
 
         if (currentRequests > limit) {
-            logger.warn("Rate limit exceeded", {
+            reqLogger.warn("Rate limit exceeded", {
                 key,
                 limit,
                 currentRequests,
@@ -43,7 +44,7 @@ export async function rateLimit(req) {
 
         return null; // No error, proceed
     } catch (error) {
-        logger.error("Rate limit internal error", { error: error.message });
+        reqLogger.error("Rate limit internal error", { error: error.message });
         return null;
     }
 }

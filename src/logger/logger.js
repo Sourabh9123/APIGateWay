@@ -2,19 +2,11 @@ import winston from "winston";
 import "winston-daily-rotate-file";
 import path from "path";
 import { config } from "../config.js";
-import { correlationContext } from "../middleware/correlation-context.js";
-
 const { combine, timestamp, json, metadata } = winston.format;
 
-// Custom format to inject correlation ID from AsyncLocalStorage with monotonic sequence
+// Custom format to inject correlation ID if provided in the meta
 const correlationFormat = winston.format((info) => {
-    const context = correlationContext?.getStore();
-    if (context && typeof context === "object") {
-        // Increment sequence for each log within the same request context
-        info.correlationId = `${context.id}-${context.seq++}`;
-    } else if (context) {
-        info.correlationId = context;
-    }
+    // If correlationId is not already set, we can leave it or set a placeholder
     return info;
 });
 
@@ -30,7 +22,6 @@ const fileTransport = new winston.transports.DailyRotateFile({
     maxFiles: "14d",
     format: combine(
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
     ),
 });
@@ -38,9 +29,8 @@ const fileTransport = new winston.transports.DailyRotateFile({
 export const logger = winston.createLogger({
     level: "info",
     format: combine(
-        correlationFormat(), // Combined format runs first
+        correlationFormat(),
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        metadata({ fillExcept: ["message", "level", "timestamp", "label", "correlationId"] }),
         json()
     ),
     transports: [
@@ -50,7 +40,8 @@ export const logger = winston.createLogger({
                 winston.format.colorize(),
                 winston.format.printf(({ timestamp, level, message, correlationId, ...meta }) => {
                     const cid = correlationId ? ` [${correlationId}]` : "";
-                    return `${timestamp} ${level}:${cid} ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`;
+                    const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
+                    return `${timestamp} ${level}:${cid} ${message}${metaStr}`;
                 })
             ),
         }),

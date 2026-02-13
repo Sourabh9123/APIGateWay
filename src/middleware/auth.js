@@ -8,18 +8,19 @@ const SECRET_KEY = config.auth.jwtSecret;
 export function verifyToken(req) {
     const authHeader = req.headers.get("Authorization");
     const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const reqLogger = req.logger || logger;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        logger.warn("Authentication failed: Missing or malformed Bearer token", { ip, path: new URL(req.url).pathname });
+        reqLogger.warn("Authentication failed: Missing or malformed Bearer token", { ip, path: new URL(req.url).pathname });
         return null;
     }
     const token = authHeader.split(" ")[1];
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        logger.info("Authentication successful", { userId: decoded.id, ip });
+        reqLogger.info("Authentication successful", { userId: decoded.id, ip });
         return decoded;
     } catch (err) {
-        logger.warn("Authentication failed: Invalid token", { ip, error: err.message, path: new URL(req.url).pathname });
+        reqLogger.warn("Authentication failed: Invalid token", { ip, error: err.message, path: new URL(req.url).pathname });
         return null;
     }
 }
